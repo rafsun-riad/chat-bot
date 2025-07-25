@@ -1,0 +1,3 @@
+@echo off
+echo Starting Backend with Uvicorn asgi server...
+call uv run uvicorn backend.asgi:application --port 8000 --reload --log-level debug

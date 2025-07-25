@@ -1,0 +1,3 @@
+@echo off
+echo Starting backend server...
+call uv run manage.py runserver

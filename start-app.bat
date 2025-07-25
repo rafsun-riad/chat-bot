@@ -1,0 +1,3 @@
+@echo off
+echo creating Django app...
+call uv run manage.py startapp %1

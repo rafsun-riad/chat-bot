@@ -1,0 +1,3 @@
+@echo off
+echo migrateing database...
+call uv run manage.py migrate
