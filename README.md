@@ -51,6 +51,6 @@ http://localhost:3000/
 
 ## Additional Notes
 
-1. There are some .bat files provided to do additional tasks and make the development process easier.
+1. There are some .bat files provided to do additional tasks and make the development process easier. It will be better if you have **WINDOWS** operating system.
 2. This is a simple chat bot with a minimal LLM. So you may not find the answers less close to natural language.
 3. This project depends on speed of user's internet connection and CPU. As a result sometimes it may take some times to give a answer. Please be patient!
