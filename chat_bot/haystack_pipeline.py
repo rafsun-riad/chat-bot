@@ -1,5 +1,3 @@
-import time
-
 from haystack import Document, Pipeline
 from haystack.components.embedders import (
     SentenceTransformersDocumentEmbedder,
@@ -49,15 +47,12 @@ query_pipeline.connect("retriever", "reader.documents")
 def add_documents(raw_text: str):
     document_store.delete_documents(document_ids=[])  # Clear all previous docs
     doc = Document(content=raw_text)
-    print(f"[DEBUG] Indexing document: {doc.content[:100]}...")
+
     indexing_pipeline.run({"splitter": {"documents": [doc]}})
-    print("[DEBUG] Document indexed.")
 
 
 # Answer questions
 def ask_question(question: str) -> str:
-    print(f"[DEBUG] Received question: {question}")
-    start = time.time()
     result = query_pipeline.run(
         {
             "query_embedder": {"text": question},
@@ -66,14 +61,12 @@ def ask_question(question: str) -> str:
         }
     )
     answers = result["reader"]["answers"]
-    print(f"[DEBUG] Answers: {answers}")
-    print(f"[DEBUG] ask_question took {time.time() - start:.2f} seconds")
+
     if not answers or not answers[0].data:
         return "Sorry, I couldn’t find an answer."
     answer = answers[0].data
     # Try to make the answer more natural and conversational
     if len(answer.split()) < 4:
-        # If answer is too short, add more context if available
         context = (
             answers[0].context
             if hasattr(answers[0], "context") and answers[0].context

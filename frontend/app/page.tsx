@@ -104,7 +104,7 @@ export default function Home() {
       send("upload", { file: base64, filename: file.name });
     };
     reader.readAsDataURL(file);
-    // Reset file input so same file can be uploaded again
+    // Reset file input
     e.target.value = "";
   };
 
