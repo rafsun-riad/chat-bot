@@ -51,8 +51,40 @@ def add_documents(raw_text: str):
     indexing_pipeline.run({"splitter": {"documents": [doc]}})
 
 
+# Clear all documents from the store
+def clear_documents():
+    try:
+        # Get all document IDs first
+        docs = document_store.filter_documents()
+        if docs:
+            doc_ids = [doc.id for doc in docs]
+            document_store.delete_documents(document_ids=doc_ids)
+            print(f"[DEBUG] Document store cleared. Deleted {len(doc_ids)} documents.")
+        else:
+            print("[DEBUG] Document store was already empty.")
+    except Exception as e:
+        print(f"[DEBUG] Error clearing documents: {e}")
+
+
+# Check if document store is empty
+def is_document_store_empty():
+    try:
+        # Try to get documents, if it raises an exception or returns empty, store is empty
+        docs = document_store.filter_documents()
+        is_empty = len(docs) == 0
+
+        return is_empty
+    except Exception as e:
+        print(f"[DEBUG] Error checking document store: {e}")
+        return True
+
+
 # Answer questions
 def ask_question(question: str) -> str:
+    # Check if document store is empty
+    if is_document_store_empty():
+        return "Please upload a document or website first."
+
     result = query_pipeline.run(
         {
             "query_embedder": {"text": question},
@@ -63,7 +95,7 @@ def ask_question(question: str) -> str:
     answers = result["reader"]["answers"]
 
     if not answers or not answers[0].data:
-        return "Sorry, I couldn’t find an answer."
+        return "Sorry, I couldn't find an answer."
     answer = answers[0].data
     # Try to make the answer more natural and conversational
     if len(answer.split()) < 4:

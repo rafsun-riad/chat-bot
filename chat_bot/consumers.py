@@ -9,16 +9,26 @@ from bs4 import BeautifulSoup
 from channels.generic.websocket import AsyncWebsocketConsumer
 from docx import Document
 
-from .haystack_pipeline import add_documents, ask_question
+from .haystack_pipeline import (
+    add_documents,
+    ask_question,
+    clear_documents,
+    is_document_store_empty,
+)
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.document_loaded = False
         self.website_title = None  # Store website title for fallback
         self.website_desc = None  # Store website meta description for fallback
         await self.accept()
+
         await self.send_json("status", "WebSocket connected. Send a file or website.")
+
+    async def disconnect(self, close_code):
+        # Clear the document store when the connection closes
+
+        clear_documents()
 
     async def receive(self, text_data):
         try:
@@ -55,7 +65,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             content = await self.extract_text(file_bytes, filename)
             if content:
                 add_documents(content)
-                self.document_loaded = True
                 await self.send_json(
                     "status", f"{filename} indexed. You may now ask questions."
                 )
@@ -132,13 +141,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             # Combine all extracted content
             combined = "\n".join(filter(None, [title, meta_desc, text]))
+
             if not combined.strip() or len(combined.strip()) < 50:
                 return await self.send_json(
                     "error", "Website contains no extractable or meaningful content."
                 )
 
             add_documents(combined)
-            self.document_loaded = True
             await self.send_json(
                 "status", "Website content indexed. You may now ask questions."
             )
@@ -149,7 +158,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
 
     async def handle_question(self, data):
-        if not self.document_loaded:
+        if is_document_store_empty():
             return await self.send_json(
                 "error", "Please upload a document or website first."
             )
@@ -162,7 +171,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             answer = ask_question(question)
             # Fallback for general website questions if no answer found
             if (
-                answer == "Sorry, I couldn’t find an answer."
+                answer == "Sorry, I couldn't find an answer."
                 and self.website_title is not None
                 and (
                     question.strip().lower()
