@@ -3,7 +3,8 @@
 import Cookies from "js-cookie";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const wsBaseURL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/ws";
+// const wsBaseURL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/ws";
+const wsBaseURL = "ws://192.168.7.49:8000/ws";
 
 type DefaultEventMap = Record<string, unknown>;
 

@@ -1,13 +1,13 @@
+import openai
 from haystack import Document, Pipeline
 from haystack.components.builders import PromptBuilder
 from haystack.components.embedders import (
     SentenceTransformersDocumentEmbedder,
     SentenceTransformersTextEmbedder,
 )
-from haystack.components.generators import HuggingFaceLocalGenerator
 from haystack.components.preprocessors import DocumentSplitter
 from haystack.components.retrievers import InMemoryEmbeddingRetriever
-from haystack.core.component import Component
+from haystack.core.component import Component, component
 from haystack.document_stores.in_memory import InMemoryDocumentStore
 
 # Initialize document store
@@ -53,18 +53,38 @@ Answer:""",
     ],  # Explicitly mark both variables as required
 )
 
-generator = HuggingFaceLocalGenerator(
-    model="google/flan-t5-small",  # Small but effective model for CPU
-    task="text2text-generation",  # Specify the task type
-    generation_kwargs={  # Generation parameters
-        "max_new_tokens": 200,  # Allow longer responses for more complete answers
-        "temperature": 0.1,  # Very low temperature for more deterministic answers
-        "top_k": 30,  # More focused vocabulary selection
-        "top_p": 0.9,  # Nucleus sampling for better quality
-        "repetition_penalty": 1.2,  # Stronger repetition avoidance
-        "do_sample": True,  # Enable sampling for natural responses
-        "num_beams": 2,  # Simple beam search for better coherence
-    },
+
+@component
+class OpenAIGenerator:
+    def __init__(
+        self, api_key: str = "YOUR_OPENAI_API_KEY", model: str = "gpt-3.5-turbo"
+    ):
+        openai.api_key = api_key
+        self.model = model
+
+    def run(self, prompt: str):
+        client = openai.OpenAI(api_key=openai.api_key)
+        response = client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an AI assistant. Only answer using the provided context. If the answer is not in the context, say 'I cannot answer this based on the provided documents.'",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.2,
+            max_tokens=200,
+        )
+        answer = response.choices[0].message.content.strip()
+        return {"generated_text": answer}
+
+
+# Replace the generator in the pipeline
+# generator = HuggingFaceLocalGenerator(...)
+generator = OpenAIGenerator(
+    api_key="Your_api_key",
+    model="gpt-3.5-turbo",
 )
 
 # Custom component to join document texts
@@ -111,8 +131,7 @@ def is_document_store_empty() -> bool:
 
 def clear_documents() -> None:
     """Clear all documents from the document store"""
-    # filter_={} means all documents
-    document_store.delete_documents(filter_={})
+    document_store.delete_documents()
     print("[DEBUG] Cleared all documents from store")
 
 
