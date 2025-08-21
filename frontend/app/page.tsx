@@ -8,7 +8,7 @@ interface ChatEvents extends Record<string, unknown> {
   status: string;
   error: string;
   answer: string;
-  question: { text: string };
+  question: { text: string; audio?: boolean };
 }
 
 export default function Home() {
@@ -34,7 +34,9 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isPlaying, setIsPlaying] = useState(false);
+  const [audioResponse, setAudioResponse] = useState(false);
 
   const { send, subscribe, unsubscribe, connected } =
     useWebSocket<ChatEvents>("/chat/");
@@ -88,15 +90,12 @@ export default function Home() {
           const after = filtered.slice(lastQuestionIdx + 1);
           return [
             ...before,
-            { type: "audio", text: "Audio response:", audioUrl: url },
+            { type: "audio", text: "", audioUrl: url },
             ...after,
           ];
         }
         // If no question, just add at end
-        return [
-          ...filtered,
-          { type: "audio", text: "Audio response:", audioUrl: url },
-        ];
+        return [...filtered, { type: "audio", text: "", audioUrl: url }];
       });
       setIsPlaying(false);
     });
@@ -143,7 +142,7 @@ export default function Home() {
       { type: "loading", text: "Thinking..." },
     ]);
     setIsThinking(true);
-    send("question", { text: trimmed });
+    send("question", { text: trimmed, audio: audioResponse });
     setInput("");
   };
 
@@ -219,7 +218,7 @@ export default function Home() {
                 : "text-left text-gray-500 dark:text-gray-400 my-2"
             }
           >
-            {msg.type === "question" ? <b>You:</b> : null} {msg.text}
+            {msg.type === "question" ? <b>You:</b> : <b>Bot:</b>} {msg.text}
             {msg.type === "audio" && msg.audioUrl && (
               <div className="flex items-center gap-2 mt-2">
                 <audio
@@ -237,7 +236,16 @@ export default function Home() {
         ))}
         <div ref={messagesEndRef} />
       </div>
-      <div className="w-full max-w-xl flex gap-2 mb-2">
+      <label className="flex items-center text-sm mb-3">
+        <input
+          type="checkbox"
+          checked={audioResponse}
+          onChange={(e) => setAudioResponse(e.target.checked)}
+          className="mr-1"
+        />
+        Audio response
+      </label>
+      <div className="w-full max-w-xl flex gap-2 mb-2 items-center">
         <input
           className="flex-1 rounded border border-gray-300 dark:border-gray-700 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-800 dark:text-white"
           type="text"
