@@ -136,8 +136,17 @@ def is_document_store_empty() -> bool:
 
 def clear_documents() -> None:
     """Clear all documents from the document store"""
-    document_store.delete_documents()
-    print("[DEBUG] Cleared all documents from store")
+    try:
+        # Get all document IDs first
+        docs = document_store.filter_documents()
+        if docs:
+            doc_ids = [doc.id for doc in docs]
+            document_store.delete_documents(document_ids=doc_ids)
+            print(f"[DEBUG] Document store cleared. Deleted {len(doc_ids)} documents.")
+        else:
+            print("[DEBUG] Document store was already empty.")
+    except Exception as e:
+        print(f"[DEBUG] Error clearing documents: {e}")
 
 
 def add_documents(texts: str | list[str]) -> None:
@@ -194,7 +203,7 @@ def ask_question(question: str) -> str:
                 print(f"[DEBUG] Unexpected result structure: {result}")
                 return "Sorry, I encountered an error while generating the answer."
 
-    return f"Answer: {answer}"
+    return f"{answer}"
 
 
 def warmup() -> None:

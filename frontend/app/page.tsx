@@ -21,8 +21,10 @@ export default function Home() {
         | "question"
         | "upload"
         | "website"
-        | "loading";
+        | "loading"
+        | "audio";
       text: string;
+      audioUrl?: string;
     }[]
   >([]);
   const [input, setInput] = useState("");
@@ -31,6 +33,8 @@ export default function Home() {
   const [_, setIsThinking] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const { send, subscribe, unsubscribe, connected } =
     useWebSocket<ChatEvents>("/chat/");
@@ -59,12 +63,75 @@ export default function Home() {
       setMessages((msgs) => [...msgs, { type: "answer", text }]);
       setIsThinking(false);
     });
+    // Handle binary audio
+    subscribe("binary", (data) => {
+      let blob: Blob;
+      if (data instanceof ArrayBuffer) {
+        blob = new Blob([data], { type: "audio/mpeg" });
+      } else {
+        blob = data as Blob;
+      }
+      const url = URL.createObjectURL(blob);
+
+      // Remove loading and add audio under the last question
+      setMessages((msgs) => {
+        // Remove loading
+        const filtered = msgs.filter((msg) => msg.type !== "loading");
+        // Find last question index
+        const lastQuestionIdx = filtered
+          .map((msg, idx) => (msg.type === "question" ? idx : -1))
+          .filter((idx) => idx !== -1)
+          .pop();
+        if (lastQuestionIdx !== undefined) {
+          // Insert audio message after last question
+          const before = filtered.slice(0, lastQuestionIdx + 1);
+          const after = filtered.slice(lastQuestionIdx + 1);
+          return [
+            ...before,
+            { type: "audio", text: "Audio response:", audioUrl: url },
+            ...after,
+          ];
+        }
+        // If no question, just add at end
+        return [
+          ...filtered,
+          { type: "audio", text: "Audio response:", audioUrl: url },
+        ];
+      });
+      setIsPlaying(false);
+    });
+
     return () => {
       unsubscribe("status");
       unsubscribe("error");
       unsubscribe("answer");
+      unsubscribe("binary");
     };
   }, [subscribe, unsubscribe]);
+
+  // Play/pause logic
+  // const handlePlay = () => {
+  //   if (audioRef.current) {
+  //     audioRef.current.play();
+  //     setIsPlaying(true);
+  //   }
+  // };
+
+  // const handlePause = () => {
+  //   if (audioRef.current) {
+  //     audioRef.current.pause();
+  //     setIsPlaying(false);
+  //   }
+  // };
+
+  // Reset play state when audio ends
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const onEnded = () => setIsPlaying(false);
+    audio.addEventListener("ended", onEnded);
+    return () => audio.removeEventListener("ended", onEnded);
+  }, [audioRef]);
 
   // Handle sending a question
   const handleSend = () => {
@@ -147,10 +214,25 @@ export default function Home() {
                 ? "text-left text-indigo-700 dark:text-indigo-300 my-2"
                 : msg.type === "loading"
                 ? "text-center text-gray-400 italic my-2 animate-pulse"
+                : msg.type === "audio"
+                ? "text-left my-2"
                 : "text-left text-gray-500 dark:text-gray-400 my-2"
             }
           >
             {msg.type === "question" ? <b>You:</b> : null} {msg.text}
+            {msg.type === "audio" && msg.audioUrl && (
+              <div className="flex items-center gap-2 mt-2">
+                <audio
+                  ref={audioRef}
+                  src={msg.audioUrl}
+                  controls
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                  onEnded={() => setIsPlaying(false)}
+                  style={{ outline: "none" }}
+                />
+              </div>
+            )}
           </div>
         ))}
         <div ref={messagesEndRef} />

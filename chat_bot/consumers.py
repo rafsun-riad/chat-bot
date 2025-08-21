@@ -15,6 +15,7 @@ from .haystack_pipeline import (
     clear_documents,
     is_document_store_empty,
 )
+from .tts_utils import text_to_speech_bytes
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -188,7 +189,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 desc = self.website_desc or "No description available."
                 fallback = f"This website is '{self.website_title}'. {desc}"
                 return await self.send_json("answer", fallback)
-            await self.send_json("answer", answer)
+            # await self.send_json("answer", answer)
+            await self.send(bytes_data=text_to_speech_bytes(answer))
         except Exception as e:
             await self.send_json("error", f"Failed to answer: {str(e)}")
 
