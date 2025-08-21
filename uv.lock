@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.12'",
@@ -306,6 +306,7 @@ dependencies = [
     { name = "nltk" },
     { name = "pymupdf" },
     { name = "python-docx" },
+    { name = "python-dotenv" },
     { name = "sentence-transformers" },
     { name = "torch" },
     { name = "transformers", extra = ["sentencepiece", "torch"] },
@@ -322,6 +323,7 @@ requires-dist = [
     { name = "nltk", specifier = ">=3.9.1" },
     { name = "pymupdf", specifier = ">=1.26.3" },
     { name = "python-docx", specifier = ">=1.2.0" },
+    { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "sentence-transformers", specifier = ">=5.0.0" },
     { name = "torch", specifier = ">=2.7.1" },
     { name = "transformers", extras = ["sentencepiece", "torch"], specifier = ">=4.53.3" },

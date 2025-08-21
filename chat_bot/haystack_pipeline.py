@@ -1,4 +1,7 @@
+import os
+
 import openai
+from dotenv import load_dotenv
 from haystack import Document, Pipeline
 from haystack.components.builders import PromptBuilder
 from haystack.components.embedders import (
@@ -9,6 +12,8 @@ from haystack.components.preprocessors import DocumentSplitter
 from haystack.components.retrievers import InMemoryEmbeddingRetriever
 from haystack.core.component import Component, component
 from haystack.document_stores.in_memory import InMemoryDocumentStore
+
+load_dotenv()
 
 # Initialize document store
 document_store = InMemoryDocumentStore()
@@ -83,7 +88,7 @@ class OpenAIGenerator:
 # Replace the generator in the pipeline
 # generator = HuggingFaceLocalGenerator(...)
 generator = OpenAIGenerator(
-    api_key="Your_api_key",
+    api_key=os.getenv("OPENAI_API_KEY"),
     model="gpt-3.5-turbo",
 )
 
