@@ -190,10 +190,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 desc = self.website_desc or "No description available."
                 fallback = f"This website is '{self.website_title}'. {desc}"
                 return await self.send_json("answer", fallback)
+            # Always send the text answer first
+            await self.send_json("answer", answer)
+
+            # If audio is requested, send the audio after the text
             if audio:
-                await self.send(bytes_data=text_to_speech_bytes(answer))
-            else:
-                await self.send_json("answer", answer)
+                audio_bytes = text_to_speech_bytes(answer)
+                await self.send(bytes_data=audio_bytes)
         except Exception as e:
             await self.send_json("error", f"Failed to answer: {str(e)}")
 

@@ -74,7 +74,7 @@ class OpenAIGenerator:
             messages=[
                 {
                     "role": "system",
-                    "content": "You are an AI assistant. Only answer using the provided context. If the answer is not in the context, say 'I cannot answer this based on the provided documents.'",
+                    "content": "You are an AI assistant. Only answer using the provided context. If the answer is not in the context, say 'I cannot answer this based on the provided documents.' Also don't make up information and don't search on the web.",
                 },
                 {"role": "user", "content": prompt},
             ],
@@ -208,14 +208,8 @@ def ask_question(question: str) -> str:
 
 def warmup() -> None:
     """Warmup the pipeline with a sample document and question"""
-    sample = """
-    Cows are herbivorous mammals that primarily eat grass, hay, and grains.
-    They can be found on farms worldwide and are raised for milk, meat, and leather.
-    Cows have a unique digestive system with four stomach compartments.
-    """
-    add_documents(sample)
+
     print(ask_question("What do cows eat?"))
-    print(ask_question("Where can you find cows?"))
 
 
 if __name__ == "__main__":

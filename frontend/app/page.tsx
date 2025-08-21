@@ -50,22 +50,17 @@ export default function Home() {
   useEffect(() => {
     const removeLoading = () =>
       setMessages((msgs) => msgs.filter((msg) => msg.type !== "loading"));
-    subscribe("status", (text) => {
+
+    subscribe("status", (data) => {
+      setMessages((msgs) => [...msgs, { type: "status", text: data }]);
+    });
+
+    subscribe("answer", (data) => {
       removeLoading();
-      setMessages((msgs) => [...msgs, { type: "status", text }]);
+      setMessages((msgs) => [...msgs, { type: "answer", text: data }]);
       setIsThinking(false);
     });
-    subscribe("error", (text) => {
-      removeLoading();
-      setMessages((msgs) => [...msgs, { type: "error", text }]);
-      setIsThinking(false);
-    });
-    subscribe("answer", (text) => {
-      removeLoading();
-      setMessages((msgs) => [...msgs, { type: "answer", text }]);
-      setIsThinking(false);
-    });
-    // Handle binary audio
+
     subscribe("binary", (data) => {
       let blob: Blob;
       if (data instanceof ArrayBuffer) {
@@ -75,29 +70,28 @@ export default function Home() {
       }
       const url = URL.createObjectURL(blob);
 
-      // Remove loading and add audio under the last question
+      // Find the last answer message and add audio to it
       setMessages((msgs) => {
-        // Remove loading
-        const filtered = msgs.filter((msg) => msg.type !== "loading");
-        // Find last question index
-        const lastQuestionIdx = filtered
-          .map((msg, idx) => (msg.type === "question" ? idx : -1))
-          .filter((idx) => idx !== -1)
-          .pop();
-        if (lastQuestionIdx !== undefined) {
-          // Insert audio message after last question
-          const before = filtered.slice(0, lastQuestionIdx + 1);
-          const after = filtered.slice(lastQuestionIdx + 1);
-          return [
-            ...before,
-            { type: "audio", text: "", audioUrl: url },
-            ...after,
-          ];
-        }
-        // If no question, just add at end
-        return [...filtered, { type: "audio", text: "", audioUrl: url }];
+        const lastAnswerIndex = [...msgs]
+          .reverse()
+          .findIndex((msg) => msg.type === "answer");
+        if (lastAnswerIndex === -1) return msgs;
+
+        const actualIndex = msgs.length - 1 - lastAnswerIndex;
+        const newMsgs = [...msgs];
+        newMsgs[actualIndex] = {
+          ...newMsgs[actualIndex],
+          audioUrl: url,
+        };
+        return newMsgs;
       });
-      setIsPlaying(false);
+
+      // Auto-play the audio
+      setTimeout(() => {
+        if (audioRef.current) {
+          audioRef.current.play().catch(console.error);
+        }
+      }, 100);
     });
 
     return () => {
@@ -218,19 +212,21 @@ export default function Home() {
                 : "text-left text-gray-500 dark:text-gray-400 my-2"
             }
           >
-            {msg.type === "question" ? <b>You:</b> : <b>Bot:</b>} {msg.text}
-            {msg.type === "audio" && msg.audioUrl && (
-              <div className="flex items-center gap-2 mt-2">
-                <audio
-                  ref={audioRef}
-                  src={msg.audioUrl}
-                  controls
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
-                  onEnded={() => setIsPlaying(false)}
-                  style={{ outline: "none" }}
-                />
-              </div>
+            {msg.type === "status" ? (
+              msg.text
+            ) : (
+              <>
+                {msg.type === "question" ? <b>You:</b> : <b>Bot:</b>} {msg.text}
+              </>
+            )}
+            {msg.audioUrl && (
+              <audio
+                ref={msg.type === "answer" ? audioRef : undefined}
+                src={msg.audioUrl}
+                autoPlay={msg.type === "answer"}
+                onEnded={() => setIsPlaying(false)}
+                style={{ display: "none" }}
+              />
             )}
           </div>
         ))}
